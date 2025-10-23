@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PayCenter | M-Pesa STK Push</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+
+<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center">
+  <div class="bg-white shadow-2xl rounded-2xl p-8 w-full max-w-md">
+    <div class="text-center mb-6">
+      <img src="https://paynecta.co.ke/assets/logo.png" alt="PayNecta" class="mx-auto w-24 mb-2">
+      <h1 class="text-2xl font-bold text-gray-800">PayCenter M-Pesa STK Push</h1>
+      <p class="text-gray-500 text-sm mt-1">Secure payments powered by PayNecta</p>
+    </div>
+
+    <!-- Payment Form -->
+    <form id="paymentForm" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Payment Code</label>
+        <input type="text" id="code" placeholder="e.g. ABC123" required
+          class="mt-1 w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700">M-Pesa Number</label>
+        <input type="tel" id="mobile" placeholder="2547XXXXXXXX" required
+          class="mt-1 w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Amount (KES)</label>
+        <input type="number" id="amount" placeholder="100" min="1" required
+          class="mt-1 w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+      </div>
+
+      <button type="submit"
+        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg font-semibold transition">
+        Initialize STK Push
+      </button>
+    </form>
+
+    <!-- Response Display -->
+    <div id="responseBox" class="hidden mt-6 bg-gray-50 border rounded-lg p-4">
+      <h2 class="font-bold text-gray-700 mb-2">Transaction Response</h2>
+      <pre id="responseText" class="text-sm text-gray-700"></pre>
+
+      <div class="mt-3 flex justify-between">
+        <button id="checkStatusBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg text-sm">Check Status</button>
+        <button id="downloadReceiptBtn" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-sm">Download Receipt</button>
+      </div>
+    </div>
+
+    <div class="text-center mt-6 text-xs text-gray-500">
+      &copy; 2025 PayCenter • Secure PayNecta Integration
+    </div>
+  </div>
+
+  <script>
+    const backendBase = "https://abels-test-stk-push.onrender.com";
+    let currentReference = null;
+
+    document.getElementById("paymentForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const code = document.getElementById("code").value.trim();
+      const mobile = document.getElementById("mobile").value.trim();
+      const amount = document.getElementById("amount").value.trim();
+
+      document.getElementById("responseBox").classList.remove("hidden");
+      document.getElementById("responseText").textContent = "Initializing payment...";
+
+      try {
+        const res = await axios.post(`${backendBase}/api/payment/initialize`, {
+          code,
+          mobile_number: mobile,
+          amount: amount
+        });
+        currentReference = res.data.data?.transaction_reference;
+        document.getElementById("responseText").textContent = JSON.stringify(res.data, null, 2);
+      } catch (err) {
+        const msg = err.response?.data || { message: "Network error or invalid response" };
+        document.getElementById("responseText").textContent = JSON.stringify(msg, null, 2);
+      }
+    });
+
+    document.getElementById("checkStatusBtn").addEventListener("click", async () => {
+      if (!currentReference) {
+        alert("No transaction reference found!");
+        return;
+      }
+      document.getElementById("responseText").textContent = "Checking status...";
+      try {
+        const res = await axios.get(`${backendBase}/api/payment/status/${currentReference}`);
+        document.getElementById("responseText").textContent = JSON.stringify(res.data, null, 2);
+      } catch (err) {
+        const msg = err.response?.data || { message: "Status check failed" };
+        document.getElementById("responseText").textContent = JSON.stringify(msg, null, 2);
+      }
+    });
+
+    document.getElementById("downloadReceiptBtn").addEventListener("click", () => {
+      if (!currentReference) {
+        alert("No reference yet!");
+        return;
+      }
+      window.open(`${backendBase}/api/payment/${currentReference}/receipt`, "_blank");
+    });
+  </script>
+</body>
+  </html>
