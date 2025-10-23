@@ -3,123 +3,249 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SwiftPay STK Push | PayNecta</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <title>💎 SwiftLoan Kenya | VIP Payment Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/3208/3208676.png">
   <style>
     body {
-      background: linear-gradient(135deg, #0d9488, #14b8a6);
-      font-family: "Inter", sans-serif;
-      color: #fff;
+      background: radial-gradient(circle at top, #0f2027, #203a43, #2c5364);
+      color: white;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
     }
     .card {
-      background: #ffffff10;
-      backdrop-filter: blur(12px);
-      border-radius: 1rem;
-      padding: 2rem;
-      box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(15px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 1.25rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
     }
-    .progress {
-      height: 8px;
-      background: #0e766e;
-      border-radius: 9999px;
-      overflow: hidden;
+    .loader {
+      border: 4px solid rgba(255,255,255,0.2);
+      border-top: 4px solid #00ffcc;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .timeline {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       margin-top: 1rem;
+      position: relative;
     }
-    .progress-bar {
-      width: 0%;
-      height: 100%;
-      background-color: #34d399;
-      transition: width 0.6s ease;
+    .timeline::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: rgba(255,255,255,0.2);
+      transform: translateY(-50%);
+    }
+    .step {
+      z-index: 1;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: black;
+      font-weight: bold;
+    }
+    .active {
+      background: #00ffcc;
+      box-shadow: 0 0 15px #00ffcc;
+    }
+    .done {
+      background: #4caf50;
+      box-shadow: 0 0 15px #4caf50;
+    }
+    .pending {
+      background: #ff9800;
+      box-shadow: 0 0 15px #ff9800;
     }
   </style>
 </head>
-<body class="flex items-center justify-center min-h-screen">
-  <div class="card w-full max-w-md text-center">
-    <h1 class="text-2xl font-bold mb-3 text-teal-100">SwiftPay STK Push</h1>
-    <p class="mb-6 text-sm text-teal-200">Secure M-Pesa payments via PayNecta</p>
 
-    <form id="paymentForm" class="space-y-4">
+<body class="min-h-screen flex flex-col items-center justify-start py-10 text-white">
+
+  <div class="w-full max-w-2xl p-8 card">
+    <h1 class="text-3xl font-bold text-center text-teal-400 mb-6">
+      ⚡ SwiftLoan Kenya VIP Dashboard
+    </h1>
+
+    <form id="payForm" class="space-y-4">
       <div>
-        <label class="block text-left text-sm text-teal-100 mb-1">Phone Number (Safaricom)</label>
-        <input type="tel" id="phone" required placeholder="2547XXXXXXXX"
-          class="w-full px-3 py-2 rounded-md focus:ring-2 focus:ring-teal-400 focus:outline-none text-gray-900" />
+        <label class="block mb-2 text-sm font-semibold">Phone Number (M-Pesa)</label>
+        <input type="text" id="phone" placeholder="e.g. 0712345678" required
+          class="w-full px-4 py-2 rounded-lg bg-gray-900 border border-gray-700 text-white focus:outline-none focus:border-teal-400">
       </div>
+
       <div>
-        <label class="block text-left text-sm text-teal-100 mb-1">Amount (KES)</label>
-        <input type="number" id="amount" required placeholder="100"
-          class="w-full px-3 py-2 rounded-md focus:ring-2 focus:ring-teal-400 focus:outline-none text-gray-900" />
+        <label class="block mb-2 text-sm font-semibold">Amount (KES)</label>
+        <input type="number" id="amount" placeholder="e.g. 100" min="1" required
+          class="w-full px-4 py-2 rounded-lg bg-gray-900 border border-gray-700 text-white focus:outline-none focus:border-teal-400">
       </div>
 
       <button type="submit" id="payBtn"
-        class="w-full bg-teal-500 hover:bg-teal-600 text-white py-2 rounded-lg transition-all font-semibold">
-        Initialize STK Push
+        class="w-full bg-teal-500 hover:bg-teal-400 text-black font-bold py-2 rounded-lg transition">
+        🚀 Send STK Push
       </button>
     </form>
 
-    <div class="progress hidden" id="progressBar">
-      <div class="progress-bar" id="progressFill"></div>
+    <div id="loader" class="flex justify-center mt-6 hidden">
+      <div class="loader"></div>
     </div>
 
-    <p id="statusText" class="mt-4 text-sm text-teal-100"></p>
+    <div id="result" class="mt-6 text-center"></div>
+  </div>
+
+  <div class="w-full max-w-4xl mt-10 card p-6">
+    <h2 class="text-xl font-bold mb-3 text-teal-300">📜 Transaction History</h2>
+    <div class="overflow-x-auto">
+      <table id="historyTable" class="w-full text-sm text-left border-collapse">
+        <thead class="bg-gray-800 text-teal-300">
+          <tr>
+            <th class="py-2 px-3">Ref</th>
+            <th class="py-2 px-3">Phone</th>
+            <th class="py-2 px-3">Amount</th>
+            <th class="py-2 px-3">Status</th>
+            <th class="py-2 px-3">Action</th>
+          </tr>
+        </thead>
+        <tbody id="historyBody" class="bg-gray-900 text-gray-300"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="mt-10 text-gray-400 text-sm">
+    © 2025 SwiftLoan Kenya — Powered by PayNecta API
   </div>
 
   <script>
-    const form = document.getElementById("paymentForm");
-    const payBtn = document.getElementById("payBtn");
-    const progressBar = document.getElementById("progressBar");
-    const progressFill = document.getElementById("progressFill");
-    const statusText = document.getElementById("statusText");
+    const baseURL = "https://abels-test-stk-push.onrender.com";
+    let autoRefreshTimer = null;
 
-    form.addEventListener("submit", async (e) => {
+    async function fetchHistory() {
+      try {
+        const res = await axios.get(`${baseURL}/receipts.json`);
+        const data = res.data;
+        const tbody = document.getElementById("historyBody");
+        tbody.innerHTML = "";
+        Object.keys(data).reverse().forEach(ref => {
+          const r = data[ref];
+          tbody.innerHTML += `
+            <tr class="border-b border-gray-800 hover:bg-gray-800/50">
+              <td class="py-2 px-3 font-mono text-teal-400">${ref}</td>
+              <td class="py-2 px-3">${r.phone}</td>
+              <td class="py-2 px-3">Ksh ${r.amount}</td>
+              <td class="py-2 px-3 text-${r.status === 'loan_released' ? 'green' : r.status === 'pending' ? 'yellow' : 'red'}-400">${r.status}</td>
+              <td class="py-2 px-3">
+                <button onclick="checkStatus('${ref}')" class="bg-blue-500 hover:bg-blue-400 px-2 py-1 rounded">View</button>
+              </td>
+            </tr>`;
+        });
+      } catch (err) {
+        console.log("History fetch failed", err);
+      }
+    }
+
+    fetchHistory();
+
+    const payForm = document.getElementById("payForm");
+    const payBtn = document.getElementById("payBtn");
+    const loader = document.getElementById("loader");
+    const resultDiv = document.getElementById("result");
+
+    payForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const phone = document.getElementById("phone").value.trim();
       const amount = document.getElementById("amount").value.trim();
-      const code = "PNT_109820"; // Stored on backend too for validation
 
-      if (!phone.startsWith("2547") || phone.length !== 12) {
-        Swal.fire("Invalid Number", "Use format 2547XXXXXXXX", "error");
-        return;
-      }
-
+      resultDiv.innerHTML = "";
+      loader.classList.remove("hidden");
       payBtn.disabled = true;
-      progressBar.classList.remove("hidden");
-      statusText.textContent = "Initializing STK Push...";
-      progressFill.style.width = "30%";
+      payBtn.classList.add("opacity-50");
 
       try {
-        const res = await fetch("https://abels-test-stk-push.onrender.com/api/initiate-stk", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ phone, amount, code }),
-        });
+        const res = await axios.post(`${baseURL}/pay`, { phone, amount });
+        const data = res.data;
+        loader.classList.add("hidden");
+        payBtn.disabled = false;
+        payBtn.classList.remove("opacity-50");
 
-        const data = await res.json();
-        if (res.ok) {
-          progressFill.style.width = "70%";
-          statusText.textContent = "Request sent. Check your phone and enter M-Pesa PIN...";
-          Swal.fire("STK Push Sent!", "Please approve payment on your M-Pesa phone.", "info");
+        if (data.success) {
+          const ref = data.reference;
+          displayReceipt(data.receipt);
+          fetchHistory();
+          startAutoRefresh(ref);
         } else {
-          throw new Error(data.message || "Failed to initiate payment");
+          resultDiv.innerHTML = `<div class="text-red-400 font-semibold">❌ ${data.error}</div>`;
         }
-
-        setTimeout(() => {
-          progressFill.style.width = "100%";
-          statusText.textContent = "Payment processing...";
-        }, 3000);
-
       } catch (err) {
-        Swal.fire("Error", err.message, "error");
-        statusText.textContent = "Payment failed. Try again.";
-      } finally {
-        setTimeout(() => {
-          payBtn.disabled = false;
-          progressFill.style.width = "0%";
-          progressBar.classList.add("hidden");
-          statusText.textContent = "";
-        }, 8000);
+        loader.classList.add("hidden");
+        payBtn.disabled = false;
+        payBtn.classList.remove("opacity-50");
+        resultDiv.innerHTML = `<div class="text-red-400 font-semibold">⚠️ ${err.response?.data?.error || "Server Error"}</div>`;
       }
     });
+
+    async function checkStatus(reference) {
+      try {
+        const res = await axios.get(`${baseURL}/receipt/${reference}`);
+        displayReceipt(res.data.receipt);
+        startAutoRefresh(reference);
+      } catch {
+        resultDiv.innerHTML = `<div class="text-red-400">❌ Receipt not found or server error.</div>`;
+      }
+    }
+
+    function startAutoRefresh(reference) {
+      if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+      autoRefreshTimer = setInterval(() => checkStatus(reference), 10000);
+    }
+
+    function displayReceipt(receipt) {
+      const steps = ["pending", "processing", "loan_released"];
+      const activeStep = steps.indexOf(receipt.status);
+      resultDiv.innerHTML = `
+        <div class="bg-gray-800 p-4 rounded-lg">
+          <h2 class="text-lg font-bold text-teal-400">📜 Transaction Update</h2>
+          <p><strong>Status:</strong> ${receipt.status.toUpperCase()}</p>
+          <p><strong>Note:</strong> ${receipt.status_note}</p>
+          <p><strong>Amount:</strong> KES ${receipt.amount}</p>
+          <p><strong>Loan:</strong> KES ${receipt.loan_amount}</p>
+          <p><strong>Phone:</strong> ${receipt.phone}</p>
+          <p><strong>Time:</strong> ${new Date(receipt.timestamp).toLocaleString()}</p>
+
+          <div class="timeline mt-6">
+            <div class="step ${activeStep >= 0 ? 'done' : 'pending'}">1</div>
+            <div class="step ${activeStep >= 1 ? 'done' : 'pending'}">2</div>
+            <div class="step ${activeStep >= 2 ? 'done' : 'pending'}">3</div>
+          </div>
+          <div class="flex justify-between mt-2 text-xs text-gray-400">
+            <span>STK Sent</span><span>Processing</span><span>Loan Released</span>
+          </div>
+
+          <div class="mt-4 space-x-2">
+            <button onclick="checkStatus('${receipt.reference}')"
+              class="bg-blue-500 px-4 py-1 rounded hover:bg-blue-400">Refresh</button>
+            <button onclick="downloadPDF('${receipt.reference}')"
+              class="bg-green-500 px-4 py-1 rounded hover:bg-green-400">Download PDF</button>
+          </div>
+        </div>`;
+    }
+
+    function downloadPDF(reference) {
+      window.open(`${baseURL}/receipt/${reference}/pdf`, "_blank");
+    }
   </script>
 </body>
 </html>
